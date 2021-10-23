@@ -31,18 +31,16 @@ def create_10_folds(data):
     # split the df into 10 subsets that are random due to the manner in which samples were shuffled
     folds = np.array_split(shuffleDf, 10)
 
-    # # make data in folds numpy mx so operations are computationally optimized
-    # for i in range(len(folds)):
-    #     folds[i] = np.asmatrix(folds[i], dtype='float64')
-
     return folds
 
 
 # method that will perform 10 fold cross validation
 def ten_fold_cross_validatoin(folds):
+    accum_acc = 0
+
     for i in range(len(folds)):
         # print the fold being tested
-        print("Performing tests on fold", i+1)
+        print("Performing tests on fold:", i+1)
         # obtain the training set from all folds other than that being tested on
         train = np.concatenate((folds[:i] + folds[i + 1:]))
         # visualizing the linear separability of the training data
@@ -51,6 +49,21 @@ def ten_fold_cross_validatoin(folds):
         train = np.asmatrix(train, dtype='float64')
         # fold i is being tested on
         test = np.asmatrix(folds[i], dtype='float64')
+
+        # training on the training data over 10 epochs and returning the weight vector
+        # as well as the misclassified list
+        iterations = 10
+        w, misclassified_list = perceptron(train, iterations)
+
+        # display how the misclassifications vary over training
+        # can see how it varies across folds
+        misclass_over_its(iterations, misclassified_list)
+
+        # use the trained weights to predict the testing data
+        fold_acc = perceptron_test(test, w)
+        print('Accuracy on fold:', i+1, fold_acc, '\n')
+        accum_acc += fold_acc
+    return accum_acc/10
 
 
 # method that will help visualize that the data is in fact linearly separable
@@ -114,27 +127,6 @@ def misclass_over_its(iterations, misclassified_list):
     plt.ylabel('misclassified')
     plt.show()
 
-# method that will be used to obtain the data to test on which is the data after that which
-# we already trained on knowing it was linearly separable
-def load_data_test(url,index_lin_seperable, to_zero):
-    # load the data from the specified url
-    data = pd.read_csv(url, header=None)
-
-    # load all of the data after the index that was specified that the data
-    # was lin sep up to
-    data = data[index_lin_seperable:]
-
-    # print the new data
-    print(data)
-
-    # encode to_zero class label as 0
-    data[4] = np.where(data.iloc[:, -1] == to_zero, 0, 1)
-    # print the data again to see the changes
-    print(data)
-    # make data a numpy mx so operations are computationally optimized
-    data = np.asmatrix(data, dtype='float64')
-    return data
-
 # method that will return performance measures for perceptron
 # given trained weights and data to test on
 def perceptron_test(data, w):
@@ -171,21 +163,4 @@ iris_data = load_data(url, 'Iris-setosa')
 folds = create_10_folds(iris_data)
 
 # perform 10 fold cross validation
-print(ten_fold_cross_validatoin(folds))
-
-# # visualize that the data is indeed linearly separable
-# visualize_lin_sep_iris(iris_data)
-#
-# # train the model for the specified number of epochs
-# # return trained weights and misclassified info over epochs
-# iterations = 10
-# w, misclassified_list = perceptron(iris_data, iterations)
-#
-# # display how the misclassifications vary over training
-# misclass_over_its(iterations, misclassified_list)
-#
-# # test the model that was built on the larger data set
-# test_iris_data = load_data_test(url, 100, 'Iris-setosa')
-#
-# #print the accuracy
-# print("accuracy", perceptron_test(test_iris_data, w))
+print('\nAverage Accuracy over ten folds:', ten_fold_cross_validatoin(folds))
