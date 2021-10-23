@@ -6,6 +6,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 # method that will load the data from the URL passed in as parameters
+# specify index to which data will be trained on
 # must specify which of two class labels will be encoded as 0
 def load_data(url, index_lin_seperable, to_zero):
     # load the data from the specified url
