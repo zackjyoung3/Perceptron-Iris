@@ -75,12 +75,60 @@ def perceptron(data, num_iter):
 
 
 # method that will display the misclassified over epochs
-def misclass_over_its(iterations):
+def misclass_over_its(iterations, misclassified_list):
     epochs = np.arange(1, iterations + 1)
     plt.plot(epochs, misclassified_list)
     plt.xlabel('iterations')
     plt.ylabel('misclassified')
     plt.show()
+
+# method that will be used to obtain the data to test on which is the data after that which
+# we already trained on knowing it was linearly separable
+def load_data_test(url,index_lin_seperable, to_zero):
+    # load the data from the specified url
+    data = pd.read_csv(url, header=None)
+
+    # load all of the data after the index that was specified that the data
+    # was lin sep up to
+    data = data[index_lin_seperable:]
+
+    # print the new data
+    print(data)
+
+    # encode to_zero class label as 0
+    data[4] = np.where(data.iloc[:, -1] == to_zero, 0, 1)
+    # print the data again to see the changes
+    print(data)
+    # make data a numpy mx so operations are computationally optimized
+    data = np.asmatrix(data, dtype='float64')
+    return data
+
+# method that will return performance measures for perceptron
+# given trained weights and data to test on
+def perceptron_test(data, w):
+    # the features are all attributes besides the class label that is ind -1
+    features = data[:, :-1]
+    # class labels are at index -1
+    labels = data[:, -1]
+
+    # iterate over the examples and count misclassifications
+    correct = 0
+    incorrect = 0
+    for x, label in zip(features, labels):
+        x = np.insert(x, 0, 1)
+        # obtain a prediction for the test example
+        y = np.dot(w, x.transpose())
+        # if y > 0 predict Iris-virginica
+        # uf y <= 0 predict Iris-setosa
+        target = 1.0 if (y > 0) else 0.0
+
+        if target == label.item(0, 0):
+            correct += 1
+        else:
+            incorrect += 1
+    acc = correct/(incorrect+correct)
+
+    return acc
 
 
 # loading the data
@@ -96,5 +144,9 @@ iterations = 10
 w, misclassified_list = perceptron(iris_data, iterations)
 
 # display how the misclassifications vary over training
-misclass_over_its(iterations)
+misclass_over_its(iterations, misclassified_list)
 
+# test the model that was built on the larger data set
+test_iris_data = load_data_test(url, 100, 'Iris-setosa')
+
+print(perceptron_test(test_iris_data, w))
