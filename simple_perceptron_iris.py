@@ -6,8 +6,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 # method that will load the data from the URL passed in as parameters
-# resulting data must be such that cutting it off at a specified index makes it linearly seperable
-# also must specify which of two class labels will be encoded as 0
+# must specify which of two class labels will be encoded as 0
 def load_data(url, index_lin_seperable, to_zero):
     # load the data from the specified url
     data = pd.read_csv(url, header=None)
@@ -149,4 +148,5 @@ misclass_over_its(iterations, misclassified_list)
 # test the model that was built on the larger data set
 test_iris_data = load_data_test(url, 100, 'Iris-setosa')
 
-print(perceptron_test(test_iris_data, w))
+#print the accuracy
+print("accuracy", perceptron_test(test_iris_data, w))
