@@ -49,6 +49,7 @@ def create_10_folds(data):
 # method that will perform 10 fold cross validation
 def ten_fold_cross_validatoin(folds, is_iris, it):
     accum_acc = 0
+    accumMetrics = [0, 0, 0, 0, 0, 0, 0]
 
     for i in range(len(folds)):
         # print the fold being tested
@@ -73,10 +74,14 @@ def ten_fold_cross_validatoin(folds, is_iris, it):
         misclass_over_its(iterations, misclassified_list)
 
         # use the trained weights to predict the testing data
-        fold_acc = perceptron_test(test, w)
-        print('Accuracy on fold:', i+1, fold_acc, '\n')
-        accum_acc += fold_acc
-    return accum_acc/10
+        confusionMxs = perceptron_test(test, w)
+        metrics = print_eval(confusionMxs)
+
+        accumInd = 0
+        while accumInd < len(accumMetrics):
+            accumMetrics[accumInd] = accumMetrics[accumInd] + metrics[accumInd]
+            accumInd += 1
+    print_accum(accumMetrics)
 
 
 # method that will help visualize that the data is in fact linearly separable
@@ -143,6 +148,11 @@ def misclass_over_its(iterations, misclassified_list):
 # method that will return performance measures for perceptron
 # given trained weights and data to test on
 def perceptron_test(data, w):
+    # create confusion matrices
+    rows, cols = (2, 2)
+    confusionMxC1 = [[0 for i in range(cols)] for j in range(rows)]
+    confusionMxC2 = [[0 for i in range(cols)] for j in range(rows)]
+
     # the features are all attributes besides the class label that is ind -1
     features = data[:, :-1]
     # class labels are at index -1
@@ -159,13 +169,143 @@ def perceptron_test(data, w):
         # uf y <= 0 predict Iris-setosa
         target = 1.0 if (y > 0) else 0.0
 
-        if target == label.item(0, 0):
-            correct += 1
+        if target == 0:
+            if label.item(0, 0) == 0:
+                confusionMxC1[0][0] = confusionMxC1[0][0] + 1
+                confusionMxC2[1][1] = confusionMxC2[1][1] + 1
+            else:
+                confusionMxC1[1][0] = confusionMxC1[1][0] + 1
+                confusionMxC2[0][1] = confusionMxC2[0][1] + 1
         else:
-            incorrect += 1
-    acc = correct/(incorrect+correct)
+            if label.item(0, 0) == 1:
+                confusionMxC1[1][1] = confusionMxC1[1][1] + 1
+                confusionMxC2[0][0] = confusionMxC2[0][0] + 1
+            else:
+                confusionMxC1[0][1] = confusionMxC1[0][1] + 1
+                confusionMxC2[1][0] = confusionMxC2[1][0] + 1
 
+    return [confusionMxC1, confusionMxC2]
+
+
+# method that will compute and print the average of the accumulated metrics
+def print_accum(accumMetrics):
+    accumInd = 0
+    print("Averages Over 10 folds")
+    labelList = ["Accuracy: ", "Micro Precision: ", 'Micro Recall: ', 'Micro F1: ',
+                 "Macro Precision: ", 'Macro Recall: ', 'Macro F1: ']
+    while accumInd < len(accumMetrics):
+        print(labelList[accumInd], accumMetrics[accumInd]/10)
+        accumInd += 1
+
+
+# method that will print the evaluation statistics given a confusion matrix
+def print_eval(confusionMxs):
+    print(confusionMxs[0])
+    acc = accuracy(confusionMxs[0])
+    microPre = micro_precision(confusionMxs)
+    microRe = micro_recall(confusionMxs)
+    micf = micro_F1(microPre, microRe)
+    macroPre = macro_precision(confusionMxs)
+    macroRe = macro_recall(confusionMxs)
+    macroF = macro_F1(confusionMxs)
+    return [acc, microPre, microRe, micf, macroPre, macroRe, macroF]
+
+
+# method that will compute the accuracy
+def accuracy(confusionMx):
+    print('Accuracy: ')
+    tp = confusionMx[0][0]
+    tn = confusionMx[1][1]
+    fp = confusionMx[1][0]
+    fn = confusionMx[0][1]
+    acc = (tp+tn)/(tp+tn+fp+fn)
+    print(acc)
     return acc
+
+
+# method that will calculate the macro_F1
+def macro_F1(confusionMxs):
+    print('Macro-F1:')
+    precA = precision(confusionMxs[0])
+    precB = precision(confusionMxs[1])
+    recA = recall(confusionMxs[0])
+    recB = recall(confusionMxs[1])
+    F1A = F1(recA, precA)
+    F1B = F1(recB, precB)
+    macroF1 = (F1A + F1B)/2
+    print(macroF1)
+    return macroF1
+
+
+# method that will calculate F1 given precision and recall values
+def F1(recall, precision):
+    return 2 * recall * precision / (recall + precision)
+
+
+# method that will be used to calculate the macro-precision
+def macro_precision(confusionMxs):
+    print('Macro-Precision:')
+    precA = precision(confusionMxs[0])
+    precB = precision(confusionMxs[1])
+    macroPre = (precA + precB)/2
+    print(macroPre)
+    return macroPre
+
+#methodd that will be used for precision calculation for a confusion mx
+def precision(confusionMx):
+    tp = confusionMx[0][0]
+    fp = confusionMx[1][0]
+    if tp == fp ==0:
+        return 0
+    return tp/(tp+fp)
+
+# method that will be used to calculate the macro-recall
+def macro_recall(confusionMxs):
+    print('Macro-Recall:')
+    recA = recall(confusionMxs[0])
+    recB = recall(confusionMxs[1])
+    macroRec = (recA + recB)/2
+    print(macroRec)
+    return macroRec
+
+#methodd that will be used for recall calculation for a confusion mx
+def recall(confusionMx):
+    tp = confusionMx[0][0]
+    fn = confusionMx[0][1]
+    if tp == fn == 0:
+        return 0
+    return tp/(tp+fn)
+
+# method that will calculate the micro-precision
+def micro_precision(confusionMxs):
+    print('Micro-Precision:')
+    tpA = confusionMxs[0][0][0]
+    tpB = confusionMxs[1][0][0]
+    fpA = confusionMxs[0][1][0]
+    fpB = confusionMxs[1][1][0]
+    microPre = (tpA + tpB)/(tpA + tpB + fpA + fpB)
+    print(microPre)
+    return microPre
+
+# method that will calculate the micro-recall
+def micro_recall(confusionMxs):
+    print('Micro-Recall:')
+    tpA = confusionMxs[0][0][0]
+    tpB = confusionMxs[1][0][0]
+    fnA = confusionMxs[0][0][1]
+    fnB = confusionMxs[1][0][1]
+    microRe = (tpA + tpB)/(tpA + tpB + fnA + fnB)
+    # note that the micro-precision and the micro-recall have the same value
+    print(microRe)
+    return microRe
+
+# method that will calculate the micro-F1
+def micro_F1(microPre, microRe):
+    print('Micro-F1:')
+    # because microPre=microRe then 2*microPre*microRe/microPre+microRe = microPre/1
+    microF1 = (2*microPre*microRe)/(microPre+microRe)
+    print(microF1)
+    return microF1
 
 
 # loading the data
@@ -176,7 +316,7 @@ iris_data = load_data(url, 4,  'Iris-setosa')
 folds = create_10_folds(iris_data)
 
 # perform 10 fold cross validation
-print('\nAverage Accuracy over ten folds:', ten_fold_cross_validatoin(folds, True, 10))
+ten_fold_cross_validatoin(folds, True, 10)
 
 # now also try to test the learner on the breast cancer dataset
 url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data'
@@ -191,4 +331,4 @@ encode_categorical(breast_cancer_data)
 folds = create_10_folds(breast_cancer_data)
 
 # run 10 fold cross validation with 50 epochs
-print('\nAverage Accuracy over ten folds:', ten_fold_cross_validatoin(folds,False, 50))
+ten_fold_cross_validatoin(folds,False, 50)
