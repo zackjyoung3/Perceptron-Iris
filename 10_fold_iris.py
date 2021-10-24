@@ -255,6 +255,7 @@ def macro_precision(confusionMxs):
 def precision(confusionMx):
     tp = confusionMx[0][0]
     fp = confusionMx[1][0]
+    # to avoid division by 0 return 0
     if tp == fp ==0:
         return 0
     return tp/(tp+fp)
@@ -272,6 +273,7 @@ def macro_recall(confusionMxs):
 def recall(confusionMx):
     tp = confusionMx[0][0]
     fn = confusionMx[0][1]
+    # to avoid division by 0 return 0
     if tp == fn == 0:
         return 0
     return tp/(tp+fn)
