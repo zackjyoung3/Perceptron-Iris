@@ -7,18 +7,30 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 # method that will load the data from the URL passed in as parameters
 # must specify which of two class labels will be encoded as 0
-def load_data(url, to_zero):
+def load_data(url,loc, to_zero):
     # load the data from the specified url
     data = pd.read_csv(url, header=None)
     # print the intial data
     print(data)
 
     # encode to_zero class label as 0
-    data[4] = np.where(data.iloc[:, -1] == to_zero, 0, 1)
+    data[loc] = np.where(data.iloc[:, -1] == to_zero, 0, 1)
     # print the data again to see the changes
     print(data)
 
     return data
+
+
+# method that will encode all categorical to numeric
+def encode_categorical(data):
+    print(data)
+    for header in data:
+        unique = data[header].unique()
+        i = 0
+        for val in unique:
+            data.loc[data[header] == val, header] = i
+            i += 1
+    print(data)
 
 
 # method that will be used to create the 10 folds for cross validation
@@ -35,7 +47,7 @@ def create_10_folds(data):
 
 
 # method that will perform 10 fold cross validation
-def ten_fold_cross_validatoin(folds):
+def ten_fold_cross_validatoin(folds, is_iris, it):
     accum_acc = 0
 
     for i in range(len(folds)):
@@ -44,7 +56,8 @@ def ten_fold_cross_validatoin(folds):
         # obtain the training set from all folds other than that being tested on
         train = np.concatenate((folds[:i] + folds[i + 1:]))
         # visualizing the linear separability of the training data
-        visualize_lin_sep_iris(train)
+        if is_iris:
+            visualize_lin_sep_iris(train)
         # converting the train to a np matrix to optimize operations
         train = np.asmatrix(train, dtype='float64')
         # fold i is being tested on
@@ -52,7 +65,7 @@ def ten_fold_cross_validatoin(folds):
 
         # training on the training data over 10 epochs and returning the weight vector
         # as well as the misclassified list
-        iterations = 10
+        iterations = it
         w, misclassified_list = perceptron(train, iterations)
 
         # display how the misclassifications vary over training
@@ -157,10 +170,25 @@ def perceptron_test(data, w):
 
 # loading the data
 url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
-iris_data = load_data(url, 'Iris-setosa')
+iris_data = load_data(url, 4,  'Iris-setosa')
 
 # create the 10 folds for cross validation
 folds = create_10_folds(iris_data)
 
 # perform 10 fold cross validation
-print('\nAverage Accuracy over ten folds:', ten_fold_cross_validatoin(folds))
+print('\nAverage Accuracy over ten folds:', ten_fold_cross_validatoin(folds, True, 10))
+
+# now also try to test the learner on the breast cancer dataset
+url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data'
+
+# load the breast cancer dataset
+breast_cancer_data = load_data(url,9, 'no')
+
+# created another method that encodes categorical attributes for this dataset
+encode_categorical(breast_cancer_data)
+
+# generate the folds
+folds = create_10_folds(breast_cancer_data)
+
+# run 10 fold cross validation
+print('\nAverage Accuracy over ten folds:', ten_fold_cross_validatoin(folds,False, 50))
