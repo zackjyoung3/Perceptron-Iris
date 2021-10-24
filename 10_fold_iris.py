@@ -190,5 +190,5 @@ encode_categorical(breast_cancer_data)
 # generate the folds
 folds = create_10_folds(breast_cancer_data)
 
-# run 10 fold cross validation
+# run 10 fold cross validation with 50 epochs
 print('\nAverage Accuracy over ten folds:', ten_fold_cross_validatoin(folds,False, 50))
