@@ -239,6 +239,8 @@ def macro_F1(confusionMxs):
 
 # method that will calculate F1 given precision and recall values
 def F1(recall, precision):
+    if recall == precision == 0:
+        return 0
     return 2 * recall * precision / (recall + precision)
 
 
